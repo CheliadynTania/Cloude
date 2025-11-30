@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Розв'язувач квадратного рівняння</title>
+    <style>
+        :root{font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;font-size:16px}
+        body{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f6f8fa}
+        .card{width:100%;max-width:720px;background:#fff;border-radius:12px;box-shadow:0 6px 20px rgba(20,30,50,.08);padding:24px}
+        h1{font-size:20px;margin:0 0 12px}
+        form{display:grid;gap:12px}
+        .row{display:flex;gap:8px;flex-wrap:wrap}
+        label{display:block;font-size:13px;color:#334155}
+        input[type=number]{width:120px;padding:8px;border:1px solid #e6e9ef;border-radius:8px}
+        .actions{display:flex;gap:8px}
+        button{padding:8px 12px;border-radius:10px;border:0;background:#0b71ff;color:#fff;cursor:pointer}
+        button.secondary{background:#6b7280}
+        pre{background:#0f1724;color:#e6eef8;padding:12px;border-radius:8px;overflow:auto}
+        .note{font-size:13px;color:#475569}
+        .result{margin-top:8px}
+    </style>
+</head>
+<body>
+<main class="card" role="main">
+    <h1>Квадратне рівняння: ax² + bx + c = 0</h1>
+    <form id="form" onsubmit="event.preventDefault();solve();">
+        <div class="row">
+            <div>
+                <label for="a">a</label>
+                <input id="a" type="number" step="any" value="1">
+            </div>
+            <div>
+                <label for="b">b</label>
+                <input id="b" type="number" step="any" value="-3">
+            </div>
+            <div>
+                <label for="c">c</label>
+                <input id="c" type="number" step="any" value="2">
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="submit">Розв'язати</button>
+            <button type="button" class="secondary" onclick="setExample()">Приклад</button>
+            <button type="button" class="secondary" onclick="clearAll()">Очистити</button>
+        </div>
+
+        <div class="result" id="result" aria-live="polite"></div>
+
+        <details>
+            <summary class="note">Покроковий розрахунок</summary>
+            <pre id="steps">Натисніть «Розв'язати» для відображення кроків.</pre>
+        </details>
+    </form>
+</main>
+// створення функцій
+<script>
+    function formatNumber(x){
+        if (Number.isFinite(x)){
+            const abs = Math.abs(x);
+            if (abs === 0) return '0';
+            if (abs < 1e-6 || abs > 1e6) return x.toExponential(6);
+            return parseFloat(x.toFixed(6)).toString();
+        }
+        return String(x);
+    }
+
+    function solve(){
+        const a = parseFloat(document.getElementById('a').value);
+        const b = parseFloat(document.getElementById('b').value);
+        const c = parseFloat(document.getElementById('c').value);
+        const out = document.getElementById('result');
+        const steps = document.getElementById('steps');
+
+        if (!isFinite(a) || !isFinite(b) || !isFinite(c)){
+            out.innerHTML = '<strong>Помилка:</strong> введіть числові значення.';
+            steps.textContent = '';
+            return;
+        }
+
+        if (a === 0){
+            // Лінійне або нульове рівняння
+            if (b === 0){
+                if (c === 0){
+                    out.innerHTML = "<strong>Нескінченна кількість розв'язків (0 = 0).</strong>";
+                    steps.textContent = 'Рівняння перетворюється на 0 = 0. Будь-яке x задовольняє.';
+                } else {
+                    out.innerHTML = "<strong>Розв'язків немає (постійне ненульове рівняння).</strong>";
+                    steps.textContent = `Рівняння: ${formatNumber(c)} = 0 — суперечність.`;
+                }
+            } else {
+                const x = -c / b;
+                out.innerHTML = `<strong>Лінійне рівняння.</strong> x = ${formatNumber(x)}`;
+                steps.textContent = `Перетворення: ${formatNumber(b)}x + ${formatNumber(c)} = 0\n x = -c/b = -(${formatNumber(c)})/(${formatNumber(b)}) = ${formatNumber(x)}`;
+            }
+            return;
+        }
+
+        const D = b*b - 4*a*c;
+        let text = '';
+        text += `a = ${formatNumber(a)}, b = ${formatNumber(b)}, c = ${formatNumber(c)}\n`;
+        text += `Дискримінант: D = b² - 4ac = ${formatNumber(b)}² - 4·${formatNumber(a)}·${formatNumber(c)} = ${formatNumber(D)}\n`;
+
+        if (D > 0){
+            const sqrtD = Math.sqrt(D);
+            const x1 = (-b + sqrtD) / (2*a);
+            const x2 = (-b - sqrtD) / (2*a);
+            out.innerHTML = `<strong>Два дійсні корені:</strong> x₁ = ${formatNumber(x1)}, x₂ = ${formatNumber(x2)}`;
+            text += `Два різні дійсні корені.\n sqrt(D) = ${formatNumber(sqrtD)}\n x₁ = (-b + sqrt(D)) / (2a) = ${formatNumber(x1)}\n x₂ = (-b - sqrt(D)) / (2a) = ${formatNumber(x2)}`;
+        } else if (D === 0){
+            const x = -b / (2*a);
+            out.innerHTML = `<strong>Подвійний корінь:</strong> x = ${formatNumber(x)}`;
+            text += `Один подвійний корінь.\n x = -b / (2a) = ${formatNumber(x)}`;
+        } else {
+            const sqrtD = Math.sqrt(-D);
+            const real = -b / (2*a);
+            const imag = sqrtD / (2*a);
+            const x1 = `${formatNumber(real)} + ${formatNumber(imag)}i`;
+            const x2 = `${formatNumber(real)} - ${formatNumber(imag)}i`;
+            out.innerHTML = `<strong>Комплексні корені:</strong> x₁ = ${x1}, x₂ = ${x2}`;
+            text += `D < 0 → комплексні корені.\n Реальна частина: ${formatNumber(real)}\n Уявна частина: ${formatNumber(imag)}\n x₁ = ${x1}\n x₂ = ${x2}`;
+        }
+
+        steps.textContent = text;
+    }
+
+    function setExample(){
+        document.getElementById('a').value = 1;
+        document.getElementById('b').value = -3;
+        document.getElementById('c').value = 2;
+        solve();
+    }
+
+    function clearAll(){
+        document.getElementById('a').value = '';
+        document.getElementById('b').value = '';
+        document.getElementById('c').value = '';
+        document.getElementById('result').textContent = '';
+        document.getElementById('steps').textContent = 'Натисніть «Розв\'язати» для відображення кроків.';
+    }
+
+    // Ініціалізувати приклад
+    setExample();
+</script>
+</body>
+</html>
